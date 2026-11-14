@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BathFoodFinder</title>
+</head>
+<body>
+    <h1>Available surplus food</h1>
+    {% for offer in offers %}
+    <article>
+        <h2>{{ offer.name }}</h2>
+        <p>£{{ offer.price }} · {{ offer.portions }} portions available</p>
+        <p>Outlet: {{ offer.outlet }}</p>
+        <p>Allergens: {{ offer.allergens }}</p>
+        <p>Collect by: {{ offer.deadline }}</p>
+    </article>
+    {% endfor %}
+</body>
+</html>
