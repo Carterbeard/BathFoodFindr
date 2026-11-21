@@ -7,7 +7,15 @@
     <title>BathFoodFinder</title>
 </head>
 <body>
+    <nav>
+        <a href="{{ url_for('home') }}">Home</a>
+    </nav>
     <h1>Available surplus food</h1>
+
+    {% if request.args.get("published") == "1" %}
+        <p role="status">Your offer has been published successfully.</p>
+    {% endif %}
+
     {% for offer in offers %}
     <article>
         <h2>{{ offer.name }}</h2>
@@ -16,6 +24,8 @@
         <p>Allergens: {{ offer.allergens }}</p>
         <p>Collect by: {{ offer.deadline }}</p>
     </article>
+    {% else %}
+        <p>No surplus food offers are currently available. Please check again later.</p>
     {% endfor %}
 </body>
 </html>

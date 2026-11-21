@@ -4,21 +4,37 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Staff | BathFoodFinder</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <nav>
+        <a href="{{ url_for('home') }}">Home</a>
+    </nav>
 
-<h1>Choose a food</h1>
+    <h1>Choose a food</h1>
 
-<form action="{{ url_for('review_item') }}" method="get">
-    <label for="food-search">Food name</label>
-    <input id="food-search" name="food_name" list="food-options" required>
+    <form action="{{ url_for('review_item') }}" method="get">
+        <label for="food-search">Food name</label>
+        <input
+            id="food-search"
+            name="food_choice"
+            list="food-options"
+            placeholder="Start typing a food name"
+            value="{{ food_choice|default('') }}"
+            required>
 
-    <datalist id="food-options">
-        {% for food in foods %}
-            <option value="{{ food.name }}"></option>
-        {% endfor %}
-    </datalist>
+        {% if error %}
+        <p class="error" role="alert">{{ error }}</p>
+        {% endif %}
 
-    <button type="submit">Review item</button>
-</form>
+        <datalist id="food-options">
+            {% for food in foods %}
+                <option value="{{ food.name }} - {{ food.outlet }}"></option>
+            {% endfor %}
+        </datalist>
+
+        <button type="submit">Review item</button>
+    </form>
+</body>
+</html>

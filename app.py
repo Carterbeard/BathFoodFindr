@@ -2,6 +2,7 @@ import sqlite3
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
+from decimal import Decimal, InvalidOperation
 
 from flask import Flask, abort, redirect, render_template, request, url_for
 
@@ -19,13 +20,14 @@ def listings():
     with closing(sqlite3.connect(DB_PATH)) as db:
         db.row_factory = sqlite3.Row
         rows = db.execute("""
-            SELECT food_items.name, food_items.outlet, food_items.allergens,
-            listings.price_pence, listings.portions, listings.collection_deadline
-            FROM listings
-            JOIN food_items ON food_items.id = listings.food_item_id
-            WHERE listings.portions > 0
-              AND listings.collection_deadline > ?
-        """, (now,)).fetchall()
+    SELECT food_items.name, food_items.outlet, food_items.allergens,
+           listings.price_pence, listings.portions, listings.collection_deadline
+    FROM listings
+    JOIN food_items ON food_items.id = listings.food_item_id
+    WHERE listings.portions > 0
+      AND listings.collection_deadline > ?
+    ORDER BY listings.collection_deadline ASC, listings.id ASC
+            """, (now,)).fetchall()
 
     offers = [
         {
@@ -46,43 +48,82 @@ def listings():
 def choose_food():
     with closing(sqlite3.connect(DB_PATH)) as db:
         db.row_factory = sqlite3.Row
-        foods = db.execute("SELECT name FROM food_items ORDER BY name").fetchall()
+        foods = db.execute(
+    "SELECT id, name, outlet FROM food_items ORDER BY name, outlet").fetchall()
 
     return render_template("choose_food.html", foods=foods)
 
 
 @app.get("/staff/listings/review")
 def review_item():
-    food_name = request.args.get("food_name", "").strip()
+    food_choice = request.args.get("food_choice", "").strip()
 
     with closing(sqlite3.connect(DB_PATH)) as db:
         db.row_factory = sqlite3.Row
-        matches = db.execute(
-            "SELECT id, name, outlet, allergens FROM food_items WHERE name = ?",
-            (food_name,),
-        ).fetchall()
 
-    if len(matches) != 1:
-        abort(400, "Go back and choose a unique food name from the catalogue.")
+        food = db.execute(
+            """
+            SELECT id, name, outlet, allergens
+            FROM food_items
+            WHERE name || ' - ' || outlet = ?
+            """,
+            (food_choice,),
+        ).fetchone()
 
-    return render_template("review_item.html", food=matches[0])
+        if food is None:
+            foods = db.execute(
+                "SELECT id, name, outlet FROM food_items ORDER BY name, outlet"
+            ).fetchall()
+
+    if food is None:
+        return render_template(
+            "choose_food.html",
+            foods=foods,
+            food_choice=food_choice,
+            error="Please select a valid food from the suggestions.",
+        ), 400
+
+    return render_template("review_item.html", food=food)
+    
 
 @app.post("/staff/listings/publish")
 def publish_offer():
     try:
         food_id = int(request.form["food_item_id"])
-        price = float(request.form["price"])
-        price_pence = round(price * 100)
+        price = Decimal(request.form["price"])
+
+        if not price.is_finite() or price.as_tuple().exponent < -2:
+            raise ValueError
+
+        price_pence = int(price * 100)
+
         portions = int(request.form["portions"])
 
         collection_time = datetime.strptime(request.form["deadline"], "%H:%M").time()
         deadline = datetime.combine(datetime.now().date(), collection_time)
         deadline = deadline.astimezone(timezone.utc)
-    except (KeyError, ValueError, OverflowError):
+    except (KeyError, ValueError, OverflowError, InvalidOperation):
         abort(400, "Enter a valid price, quantity and deadline.")
 
-    if price < 0 or portions < 1 or deadline <= datetime.now(timezone.utc):
-        abort(400, "Enter a non-negative price, at least one portion and a future deadline.")
+    if price < 0 or portions < 1:
+        abort(400, "Enter a non-negative price and at least one portion.")
+
+    if deadline <= datetime.now(timezone.utc):
+        with closing(sqlite3.connect(DB_PATH)) as db:
+            db.row_factory = sqlite3.Row
+            food = db.execute(
+                "SELECT id, name, outlet, allergens FROM food_items WHERE id = ?",
+                (food_id,),
+            ).fetchone()
+
+        if food is None:
+            return redirect(url_for("choose_food"))
+
+        return render_template(
+            "review_item.html",
+            food=food,
+            error="Please enter a collection time later than the current time.",
+        ), 400
 
     with closing(sqlite3.connect(DB_PATH)) as db:
         db.execute("PRAGMA foreign_keys = ON")
@@ -101,4 +142,4 @@ def publish_offer():
         except OverflowError:
             abort(400, "One of the numbers is too large.")
 
-    return redirect(url_for("listings"))
+    return redirect(url_for("listings", published="1"))

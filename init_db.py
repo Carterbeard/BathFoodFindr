@@ -24,12 +24,18 @@ with sqlite3.connect(db_path) as db:
         );
     """)
 
-    db.execute("""
+    db.executemany("""
         INSERT OR IGNORE INTO food_items (id, name, outlet, allergens)
-        VALUES (1, 'Regular chicken katsu curry with rice', 'Fountain Canteen', 'Wheat, milk')
-    """)
+        VALUES (?, ?, ?, ?)
+    """, [
+        (1, "Regular chicken katsu curry with rice", "Fountain Canteen", "Wheat, milk"),
+        (2, "Cheese sandwich", "Fountain Canteen", "Wheat, milk"),
+        (3, "Cheese sandwich", "Pitstop", "Wheat, milk"),
+        (4, "Vegetable pasta", "Lime Tree", "Wheat"),
+        (5, "Chocolate pastry", "Pitstop", ""),
+    ])
 
-    deadline = datetime.now(timezone.utc) + timedelta(days=1)
+    deadline = datetime.now(timezone.utc) + timedelta(hours=1)
     db.execute("""
         INSERT OR IGNORE INTO listings
             (id, food_item_id, price_pence, portions, collection_deadline)

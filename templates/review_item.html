@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-
+    <nav>
+        <a href="{{ url_for('home') }}">Home</a>
+    </nav>
 <h1>{{ food.name }}</h1>
 <p>Outlet: {{ food.outlet }}</p>
 <p>Saved allergens: {{ food.allergens or "Not recorded" }}</p>
@@ -22,8 +24,12 @@
     <label for="portions">Portions available</label>
     <input id="portions" name="portions" type="number" min="1" step="1" required>
 
-    <label for="deadline">Collect by today</label>
+    <label for="deadline">Collect by</label>
     <input id="deadline" name="deadline" type="time" required>
+
+    {% if error %}
+    <p class="error" role="alert">{{ error }}</p>
+    {% endif %}
 
     <button type="submit">Publish offer</button>
 </form>
