@@ -7,25 +7,102 @@
     <title>BathFoodFinder</title>
 </head>
 <body>
-    <nav>
-        <a href="{{ url_for('home') }}">Home</a>
-    </nav>
-    <h1>Available surplus food</h1>
+    <header class="main-logo">
+        <a class="main-logo-link" href="{{ url_for('home') }}">BathFoodFinder</a>
+        <p>UNIVERSITY OF BATH</p>
+    </header>
 
-    {% if request.args.get("published") == "1" %}
-        <p role="status">Your offer has been published successfully.</p>
+    <section class="inspirational-quote">
+        <div class="left-quote">
+            <p>GOOD FOOD. LESS WASTE.</p>
+            <h1>Your next meal. A better deal.</h1>
+            <p>Find surplus food on campus, reserve it, and collect before it's gone.</p>
+        </div>
+        <div class="right-quote">
+            <p>LIVE ON CAMPUS</p>
+            <h3>Good food, from £1</h3>
+            <p>Save money. Skip the waste. </p>
+        </div>
+    </section>
+
+    <section class="filtering-buttons">
+        <input class="search-box control" type="search" placeholder="Search meals, pastries or campus outlets">
+        <button class="filter-button control" type="button">
+            <img src="{{ url_for('static', filename='assets/filter-icon.svg') }}">
+            Filters
+        </button>
+        <label class="sort-control">
+            <span class="visually-hidden">Sort surplus food</span>
+            <select class="control" name="sort">
+                <option value="collection-ending-soon" selected>Sort: Collection ending soon</option>
+                <option value="price-low-high">Price: Low to high</option>
+                <option value="price-high-low">Price: High to low</option>
+                <option value="closest-outlet-first">Closest Outlet First</option>
+                <option value="outlet-a-z">Outlet: A to Z</option>
+                <option value="portions-most-first">Most portions first</option>
+                <option value="name-a-z">Food name: A to Z</option>
+            </select>
+        </label>
+    </section>
+
+    <section class="food-type-filtering">
+        <input type="radio" name="food-type" id="all-food" value="all" checked>
+        <label for="all-food">All Food</label>
+
+        <input type="radio" name="food-type" id="bakery" value="bakery">
+        <label for="bakery">Bakery</label>
+
+        <input type="radio" name="food-type" id="meals" value="meals">
+        <label for="meals">Meals</label>
+
+        <p class="availability-status">
+            <span aria-hidden="true"></span>
+            Availability updated: just now
+        </p>
+    </section>
+
+    <div class="fresh-finds-heading">
+        <h2>Fresh finds on campus</h2>
+        <p class="offers-count">
+            {% if offers|length == 0 %}
+                No offers available
+            {% elif offers|length == 1 %}
+                1 offer available
+            {% else %}
+                {{ offers|length }} offers available
+            {% endif %}
+        </p>
+    </div>
+
+    <section class="offers-grid">
+    {% for offer in offers %}
+        <article class="offer-card">
+            <div class="offer-image">
+                <span>Item photo</span>
+                <span class="portions-left">{{ offer.portions }} left</span>
+            </div>
+
+            <div class="offer-details">
+                <h2>{{ offer.name }}</h2>
+
+                <p class="offer-outlet">{{ offer.outlet }}</p>
+
+                <p class="collection-time">Collect by {{ offer.deadline }}</p>
+
+                <p class="offer-allergens">
+                    <span>Allergens:</span> {{ offer.allergens }}
+                </p>
+
+                <p class="offer-price">£{{ offer.price }}</p>
+
+                <button class="reserve-button" type="button">Reserve - pay at collection</button>
+            </div>
+        </article>
+    {% endfor %}
+    </section>
+    {% if offers|length == 0 %}
+        <p class="empty-listing-state">No surplus food offers are currently available. Please check again later.</p>
     {% endif %}
 
-    {% for offer in offers %}
-    <article>
-        <h2>{{ offer.name }}</h2>
-        <p>£{{ offer.price }} · {{ offer.portions }} portions available</p>
-        <p>Outlet: {{ offer.outlet }}</p>
-        <p>Allergens: {{ offer.allergens }}</p>
-        <p>Collect by: {{ offer.deadline }}</p>
-    </article>
-    {% else %}
-        <p>No surplus food offers are currently available. Please check again later.</p>
-    {% endfor %}
 </body>
 </html>
